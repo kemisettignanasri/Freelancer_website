@@ -1,0 +1,179 @@
+.mhome {
+    background-image: url(https://images.samsung.com/is/image/samsung/assets/se/memory/samsung-magician/Magician_landing-Banner_VI_pc_notext_1920x440.jpg?imwidth=1366);
+    height: auto;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    position: relative; 
+}
+
+.mhome::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); 
+    z-index: 1; 
+}
+
+.content-wrapper {
+    display: flex;
+    flex-direction: column; 
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+    position: relative;
+    z-index: 2;
+}
+
+.container-box {
+    width: 50%;
+    max-width: 1200px;
+    text-align: left;
+    margin-top: 60px;
+    margin-right: 230px;
+    margin-bottom: 70px;
+    position: relative; 
+    z-index: 2;
+}
+
+.tag {
+    width: auto;
+    margin-bottom: 50px;
+    margin-top: 90px;
+    margin-left: -180px;
+}
+
+.tag-line {
+    color: rgb(255, 255, 255);
+    font-size: 2.5em;
+    text-align: left;
+}
+
+.sub-line {
+    color: white;
+    font-size: 1.2em;
+}
+
+.mheading {
+    color: rgb(22, 244, 226);
+    margin-right: 55%;
+}
+
+.cards-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+}
+
+.card {
+    width: 40%; 
+    height: 420px;
+    background-color: rgb(253, 253, 253,0.6);
+    border: 2px solid rgb(130, 44, 196);
+    border-radius: 10px;  
+    align-items: center;
+    margin-bottom: 100px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-10px); 
+    background-color: white;
+}
+
+.fimg, .eimg {
+    height: 200px;
+    width: 200px;
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.card:hover .fimg, .card:hover .eimg {
+    transform: scale(1.1); 
+}
+
+.hcard {
+    margin-top: 9px;
+    color: rgb(97, 32, 158);
+}
+
+.card-content {
+    color: #333;
+    font-style: oblique;
+    font-size: 1em;
+    line-height: 1.5;
+    padding: 7px;
+}
+
+.middleheading {
+    color: rgb(22, 244, 226);
+    margin-right: 84.5%;
+}
+
+.how-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 1200px;
+}
+
+.guide {
+    width: 40%;
+    background-color: rgba(188, 234, 227, 0.4);
+    padding: 20px;
+    border-radius: 10px;
+    justify-content: space-evenly;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.guide:hover {
+    background-color: rgb(196, 149, 187); 
+}
+
+.guide-heading {
+    color: rgb(130, 44, 196);
+    font-size: 1.5em;
+    margin-bottom: 15px;
+}
+
+.step-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.step-image {
+    width: 200px;
+    height: 200px;
+    margin-bottom: 15px;
+    border-radius: 10px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.step-image:hover {
+    transform: scale(1.1);
+}
+
+.step-text {
+    font-size: 1.1em;
+    color: #333;
+    margin: 0;
+    font-weight: bold;
+    font-family: 'Roboto', sans-serif; 
+}

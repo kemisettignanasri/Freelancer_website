@@ -1,0 +1,72 @@
+.head {
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+    padding: 10px 20px; 
+    background: linear-gradient(90deg, #2f0f5a, #5a189a); 
+  }
+  
+  /* .logo {
+   background-color: white; 
+  } */
+   .name{
+    margin-top: 10px;
+    margin-left: 6px;
+    color: rgb(240, 242, 240);
+    font-family: fantasy;
+   }
+  
+  .logo img {
+    display: block; 
+  }
+  
+  .auth-buttons {
+    display: flex;
+    gap: 12px; 
+    align-items: center; 
+  }
+  
+  .auth-buttons button {
+    padding: 8px 27px; 
+    font-size: 14px;
+    border: 2px solid white;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s ease, color 0.3s ease; 
+  }
+  
+  .auth-buttons .login {
+    background-color: #2f0f5a;
+    color: white;
+  }
+  
+  .auth-buttons .signup {
+    background-color: #2f0f5a;
+    color: white;
+  }
+  
+  .auth-buttons .login:hover,
+  .auth-buttons .signup:hover {
+    background-color: white;
+    color: #2f0f5a;
+  }
+  
+  .auth-buttons .logout {
+    padding: 8px 27px; 
+    font-size: 14px;
+    border: 2px solid white;
+    cursor: pointer;
+    border-radius: 4px;
+    background-color: #2f0f5a;
+    color: white;
+    transition: background-color 0.3s ease, color 0.3s ease; 
+  }
+  
+  .auth-buttons .logout:hover {
+    background-color: white;
+    color: #2f0f5a;
+  }
+  
+  .username {
+    margin-right: 10px; 
+  }
