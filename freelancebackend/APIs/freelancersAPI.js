@@ -63,7 +63,6 @@ freelancerApp.post('/login',expressAsyncHandler(async(req,res)=>{
 }));
 
 //Upload profile(resume)
-
 freelancerApp.put('/freelancer/:fullName/uploadProfile', expressAsyncHandler(async (req, res) => {
   // Get freelancerCollection object
   const freelancerCollection = req.app.get('freelancerCollection');
@@ -94,8 +93,6 @@ freelancerApp.put('/freelancer/:fullName/uploadProfile', expressAsyncHandler(asy
       res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 }));
-
-
 
 //update profile(resume)
 const { ObjectId } = require('mongodb');
@@ -128,36 +125,43 @@ freelancerApp.put('/freelancer/:id/updateProfile', expressAsyncHandler(async (re
   }
 }));
 
-
 //edit profile-up (profile)
 freelancerApp.put('/freelancer/:id/editProfile', expressAsyncHandler(async (req, res) => {
     const freelancerCollection = req.app.get('freelancerCollection');
     const { id } = req.params;  // Get ID from URL
-    const updateFields = req.body; // Get fields to update
-  
+    let updateFields = req.body; // Get fields to update
+
     try {
-        // Find the freelancer by ID
+      
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid freelancer ID format" });
+        }
+
+        if (updateFields._id) {
+            delete updateFields._id;
+        }
         const freelancer = await freelancerCollection.findOne({ _id: new ObjectId(id) });
-  
+
         if (!freelancer) {
             return res.status(404).json({ message: `No freelancer found with ID: ${id}` });
         }
         
         // Update the freelancer's profile
-        const updatedDetails = await freelancerCollection.updateOne(
+        const updatedDetails = await freelancerCollection.findOneAndUpdate(
             { _id: new ObjectId(id) },
-            { $set: updateFields }
-        );  
-        console.log("currentfreelancer",updatedDetails)
-        res.status(200).json({ message: "Profile updated successfully!",payload:updatedDetails });
-  
+            { $set: updateFields },
+            { returnDocument: "after" } 
+        );
+
+        res.status(200).json({ message: "Profile updated successfully!", payload: updatedDetails });
+
     } catch (error) {
         console.error("Error:", error);
         res.status(500).json({ message: "Internal Server Error", error: error.message });
     }
-  }));
-  
+}));
 
+  
 //applied profile (application)
 freelancerApp.put('/freelancer/:fullName/application/:id', expressAsyncHandler(async (req, res) => {
   const freelancerCollection = req.app.get('freelancerCollection');
@@ -236,16 +240,17 @@ freelancerApp.put('/freelancer/:fullName/application/:id', expressAsyncHandler(a
           jobId: job._id,
           jobTitle: job.jobTitle,
           companyName: job.companyname,
-          status: "Pending", // Default status
+          status: "Pending", 
       };
 
       freelancer.appliedJob.push(appliedJob);
 
-      // Update freelancer document
       await freelancerCollection.updateOne(
           { fullName },
           { $set: { appliedJob: freelancer.appliedJob } }
       );
+      console.log(job.applications)
+      console.log(freelancer.appliedJob)
 
       res.status(200).json({ message: "Application submitted successfully and recorded in freelancer's account!" });
 
@@ -253,35 +258,69 @@ freelancerApp.put('/freelancer/:fullName/application/:id', expressAsyncHandler(a
       console.error("Error:", error);
       res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
+  try {
+        const freelancer = await freelancerCollection.findOne({ _id: new ObjectId(id) });
+
+        if (!freelancer) {
+            return res.status(404).json({ message: "Freelancer not found" });
+        }
+
+        res.status(200).json({ appliedJobs: freelancer.appliedJob || [] });
+    } catch (error) {
+        console.error("Error fetching applied jobs:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
 }));
 
-
-//delete profile
-freelancerApp.delete('/freelancer/:fullName/deleteProfile', expressAsyncHandler(async (req, res) => {
+//get applied jobs
+freelancerApp.get('/freelancer/:fullName/appliedJobs', expressAsyncHandler(async (req, res) => {
     const freelancerCollection = req.app.get('freelancerCollection');
     const { fullName } = req.params;
 
     try {
-        // Find the freelancer by full name
         const freelancer = await freelancerCollection.findOne({ fullName });
 
         if (!freelancer) {
-            return res.status(404).json({ message: `No freelancer found with name: ${fullName}` });
+            return res.status(404).json({ message: "Freelancer not found" });
         }
 
-        // Remove the profileList field
-        await freelancerCollection.updateOne(
-            { fullName },
-            { $unset: { profileList: "" } }  // Removes profileList field
-        );
-
-        res.status(200).json({ message: "Profile list deleted successfully!" });
-
+        res.status(200).json({ appliedJobs: freelancer.appliedJob || [] });
     } catch (error) {
-        console.error("Error:", error);
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
+        console.error("Error fetching applied jobs:", error);
+        res.status(500).json({ message: "Internal Server Error" });
     }
 }));
+
+
+//delete profile
+freelancerApp.get('/employer/:fullName/applications', expressAsyncHandler(async (req, res) => {
+    const employerCollection = req.app.get('employerCollection');
+    const { fullName } = req.params;
+  
+    try {
+        // Find employer by full name
+        const employer = await employerCollection.findOne({ fullName });
+  
+        if (!employer) {
+            return res.status(404).json({ message: "Employer not found" });
+        }
+  
+        // Group applications by job
+        const jobApplications = employer.jobList.map(job => ({
+            jobId: job._id,
+            jobTitle: job.jobTitle,
+            companyName: job.companyname,
+            applications: job.applications || [] // Ensure applications exist
+        }));
+  
+        res.status(200).json({ payload: jobApplications });
+  
+    } catch (error) {
+        console.error("Error fetching applications:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+  }));
+  
 
 //get all profiles
 freelancerApp.get('/profiles', expressAsyncHandler(async (req, res) => {
@@ -317,7 +356,8 @@ freelancerApp.get("/profileList", expressAsyncHandler(async (req, res) => {
         
         // Fetch all freelancers
         const freelancers = await freelancerCollection.find({}).toArray();
-        console.log("Fetched freelancers:", freelancers); // Log fetched data
+        console.log("Fetched freelancers data structure:", JSON.stringify(freelancers, null, 2));
+
 
         if (!freelancers || freelancers.length === 0) {
             return res.status(404).json({ message: "No freelancers found in database." });
@@ -325,13 +365,17 @@ freelancerApp.get("/profileList", expressAsyncHandler(async (req, res) => {
 
         let profileLists = [];
         freelancers.forEach(freelancer => {
-            console.log(`Processing freelancer: ${freelancer.name}`, freelancer.profileList);
-            if (freelancer.profileList && Array.isArray(freelancer.profileList)) {
-                profileLists.push(...freelancer.profileList);
+            // console.log(`Processing freelancer: ${freelancer.fullName || 'Unknown'}`, freelancer);
+        
+            // Ensure profileList exists and is an object before pushing
+            if (freelancer.profileList && typeof freelancer.profileList === "object") {
+                profileLists.push(freelancer.profileList);
+            } else {
+                console.log(`No profile list found for ${freelancer.fullName || 'Unknown'}`);
             }
         });
-
-        console.log("Extracted profileLists:", profileLists); // Log extracted data
+        
+        // console.log("Extracted profileLists:", profileLists); // Log extracted data
 
         if (profileLists.length === 0) {
             return res.status(404).json({ message: "No profile lists found." });

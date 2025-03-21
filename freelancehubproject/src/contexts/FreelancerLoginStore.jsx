@@ -58,7 +58,7 @@ function FreelancerLoginStore({ children }) {
             }
             const data = await res.json();
             console.log("Fetched profileLists:", data.payload); 
-            console.log("profiles",data.payload)// Log fetched data
+            console.log("profiles",data.payload)
             setProfileListing(data.payload);
         } catch (error) {
             console.error("Error while fetching data:", error.message);

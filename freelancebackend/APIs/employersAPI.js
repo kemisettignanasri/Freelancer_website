@@ -6,6 +6,7 @@ const tokenVerify=require('../middlewares/tokenVerify')
 const expressAsyncHandler=require('express-async-handler')
 require('dotenv').config()
 employerApp.use(exp.json())
+const { ObjectId } = require('mongodb');
 
 // Define routes
 employerApp.get("/", (req, res) => {
@@ -63,7 +64,6 @@ employerApp.post('/login',expressAsyncHandler(async(req,res)=>{
 }));
 
  //employer edit profile
-
  employerApp.put('/employer/:id/editProfile', tokenVerify, expressAsyncHandler(async (req, res) => {
      const employerCollection = req.app.get('employerCollection');
      const { id } = req.params;
@@ -93,8 +93,8 @@ employerApp.post('/login',expressAsyncHandler(async(req,res)=>{
      }
  }));
  
-  
-const { ObjectId } = require('mongodb');
+
+
 
 //put jobList
 employerApp.put('/employer/:fullName/joblisting', expressAsyncHandler(async (req, res) => {
@@ -188,7 +188,7 @@ employerApp.get('/employer/:id/getJobListing', expressAsyncHandler(async (req, r
         res.status(500).json({ message: "Internal Server Error", error: error.message });
     }
 }));
-
+//joblisting
 employerApp.get('/employers/getAllJobListings', expressAsyncHandler(async (req, res) => {
     const employerCollection = req.app.get('employerCollection');
 
@@ -222,12 +222,56 @@ employerApp.get('/employers/getAllJobListings', expressAsyncHandler(async (req, 
     }
 }));
 
+employerApp.get('/employer/:fullName/applications', expressAsyncHandler(async (req, res) => {
+    const employerCollection = req.app.get('employerCollection');
+    const { fullName } = req.params;
+
+    try {
+        console.log(`Fetching applications for employer: ${fullName}`);
+
+        // Find employer by full name
+        const employer = await employerCollection.findOne({ fullName });
+
+        if (!employer) {
+            console.log("Employer not found");
+            return res.status(404).json({ message: "Employer not found" });
+        }
+
+        console.log("Employer found:", employer);
+
+        if (!employer.jobList || !Array.isArray(employer.jobList)) {
+            console.log("No job list found for employer");
+            return res.status(404).json({ message: "No job listings found" });
+        }
+        const applications = employer.jobList.flatMap(job =>
+            (job.applications || []).map(app => ({
+                jobId: job._id,
+                jobTitle: job.jobTitle,
+                companyName: job.companyname,
+                freelancerName: app.fullName,
+                email: app.email,
+                skills: app.skills,
+                experience: app.experience,
+                rate: app.rate,
+                availability: app.availability,
+                status: app.status
+            }))
+        );
+
+        res.status(200).json({ payload: applications });
+
+    } catch (error) {
+        console.error("Error fetching applications:", error);
+        res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+}));
+
+
 
 //statusUpdate
 employerApp.put('/employer/updateStatus', expressAsyncHandler(async (req, res) => {
-    const { jobId, freelancerId, status } = req.body;
+    const { jobId, freelancerName, status } = req.body;
     const jobid = new ObjectId(jobId);
-    const freelancerid= new ObjectId(freelancerId)
     
     try {
         const employerCollection = req.app.get('employerCollection');
@@ -236,14 +280,14 @@ employerApp.put('/employer/updateStatus', expressAsyncHandler(async (req, res) =
         
         // Update the application status in employerCollection
         const employerUpdateResult = await employerCollection.updateOne(
-            { "jobList._id": jobid, "jobList.applications.freelancerId": freelancerid },
+            { "jobList._id": jobid, "jobList.applications.fullName": freelancerName },
             { $set: { "jobList.$[job].applications.$[app].status": status } },
-            { arrayFilters: [{ "job._id": jobid }, { "app.freelancerId": freelancerid }] }
+            { arrayFilters: [{ "job._id": jobid }, { "app.fullName": freelancerName }] }
         );
         
         // Update the application status in freelancerCollection
         const freelancerUpdateResult = await freelancerCollection.updateOne(
-            { "appliedJob.jobId": jobid, "_id": freelancerid },
+            { "appliedJob.jobId": jobid, "fullName": freelancerName },
             { $set: { "appliedJob.$.status": status } }
         );
         
@@ -280,6 +324,7 @@ employerApp.get('/profiles', expressAsyncHandler(async (req, res) => {
       res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 }));
+
 
 // Export the router
 module.exports = employerApp;

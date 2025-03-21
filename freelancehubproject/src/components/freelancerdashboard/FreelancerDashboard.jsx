@@ -28,6 +28,7 @@ useEffect(() => {
   }
 }, [selectedOption, currentFreelancer, setValue]);
 console.log("current",currentFreelancer)
+
 const onSubmitProfile = async (data) => {
   if (!currentFreelancer?._id) {
    
@@ -47,7 +48,7 @@ const onSubmitProfile = async (data) => {
       throw new Error("Failed to update freelancer profile");
     }
 
-    console.log(res)
+    console.log("Updated profile:",res.payload)
     setCurrentFreelancer(res.payload);
     setIsEditing(false);
     setShowEditModal(false);
@@ -115,121 +116,40 @@ const onSubmitProfile = async (data) => {
       };
   
       //  Fetch employer data
-      const employerResponse = await fetch('http://localhost:4000/employers-Api/profiles');
-      if (!employerResponse.ok) throw new Error('Failed to fetch employers');
-      
-      const responseData = await employerResponse.json();
-  
-      const employers = responseData.payload;
-      
-      let job = null;
-      let employer = null;
-  
-      // Find the job in employers
-      for (const emp of employers) {
-        if (emp.joblist && Array.isArray(emp.joblist)) {
-          const foundJob = emp.joblist.find(j => j.id == selectedJobId);
-          if (foundJob) {
-            job = foundJob;
-            employer = emp;
-            break;
-          }
-        }
+      const response = await fetch(`http://localhost:4000/freelancers-Api/freelancer/${proposalData.fullName}/application/${proposalData.jobId}`,{
+        method:"PUT",
+        headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(proposalData)
       }
-  
-      if (!job || !employer) {
-        throw new Error('Job not found');
+      )
+      const res=await response.json()
+      if(res.message==="Application submitted successfully and recorded in freelancer's account!"){
+        setShowApplyModal(false)
       }
-  
-      //  Update the employer's joblist with the new application
-      employer.joblist = employer.joblist.map(jobItem => {
-        if (jobItem.id === selectedJobId) {
-          if (!jobItem.applications) {
-            jobItem.applications = [];
-          }
-          jobItem.applications.push(proposalData);
-        }
-        return jobItem;
-      });
-  
-      //  Send updated employer data
-      const updateEmployerResponse = await fetch(
-        `http://localhost:4000/employers-Api/employer/${employer._id}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(employer),
-        }
-      );
-  
-      if (!updateEmployerResponse.ok) {
-        throw new Error('Failed to update employer data');
-      }
-  
-      //  Fetch the current freelancer's data
-      const freelancerResponse = await fetch(
-        `http://localhost:4000/freelancers-Api/${currentFreelancer._id}`
-      );
-      if (!freelancerResponse.ok) throw new Error('Failed to fetch freelancer data');
-      
-      const freelancerData = await freelancerResponse.json();
-  
-      //  Add job to freelancer's appliedJobs
-      const appliedJob = {
-        jobId: job.id,
-        companyname: job.companyname,
-        role: job.jobTitle,
-        status: 'Pending',
-      };
-  
-      const updatedFreelancer = {
-        ...freelancerData,
-        appliedJobs: [...(freelancerData.appliedJobs || []), appliedJob],
-      };
-  
-      //  Update freelancer data
-      const updateFreelancerResponse = await fetch(
-        `http://localhost:4000/freelancers-Api/application/${currentFreelancer._id}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedFreelancer),
-        }
-      );
-  
-      if (!updateFreelancerResponse.ok) {
-        throw new Error('Failed to update freelancer data');
-      }
-  
-      //  Update frontend state
-      setAppliedJobs(updatedFreelancer.appliedJobs);
-      setShowApplyModal(false);
-      setSelectedJobId(null);
-      alert('Proposal submitted successfully!');
-    } catch (error) {
-      console.error('Error submitting proposal:', error.message);
-      alert(`Error: ${error.message}`);
+    }catch(error){
+      console.log(error)
     }
   };
-  
+  //applied
   useEffect(() => {
-  const fetchAppliedJobs = async () => {
-    try {
-      const response = await fetch(`http://localhost:3000/freelancerList/${currentFreelancer.id}`);
-      const data = await response.json();
-
-      if (data.appliedJobs) {
-        setAppliedJobs(data.appliedJobs);
+    const fetchAppliedJobs = async () => {
+      try {
+        const response = await fetch(`http://localhost:4000/freelancers-Api/freelancer/${currentFreelancer.fullName}/appliedJobs`);
+        const data = await response.json();
+  
+        if (data.appliedJobs) {
+          setAppliedJobs(data.appliedJobs);
+        }
+      } catch (error) {
+        console.error('Error fetching applied jobs:', error);
       }
-    } catch (error) {
-      console.error('Error fetching applied jobs:', error);
+    };
+  
+    if (currentFreelancer?.fullName) {
+      fetchAppliedJobs();
     }
-  };
-
-  if (currentFreelancer?.id) {
-    fetchAppliedJobs();
-  }
-}, [currentFreelancer]);
+  }, [currentFreelancer]);
+  
 
 useEffect(()=>{
   setUploadedProfile(currentFreelancer?.profileList ? currentFreelancer.profileList : null);
@@ -237,8 +157,7 @@ useEffect(()=>{
 
 async function details(freelancerData) {
   try {
-      // Construct profile data
-      const profileList = {
+         const profileList = {
           fullName: freelancerData.fullName,
           email: freelancerData.email,
           workExperience: freelancerData.workExperience,
@@ -248,8 +167,6 @@ async function details(freelancerData) {
           description: freelancerData.description,
           availability: freelancerData.availability
       };
-
-      // Make a PUT request to update the freelancer profile
       const res = await fetch(`http://localhost:4000/freelancers-Api/freelancer/${freelancerData.fullName}/uploadProfile`, {
           method: "PUT",
           headers: {
@@ -278,43 +195,19 @@ async function details(freelancerData) {
 }
 
   
-  useEffect(() => {
-    const fetchDetails = async () => {
-      try {
-        const res = await fetch(`http://localhost:3000/freelancerList/${currentFreelancer.id}`);
-        const data = await res.json();
   
-        if (data.profileList) {
-          setfreelancerdetails(data.profileList);
-          setUploadedProfile(data.profileList);
-        } else {
-          setfreelancerdetails({});
-        }
-      } catch (error) {
-        console.error("Error fetching freelancer profile details:", error);
-      }
-    };
-  
-    if (currentFreelancer?.id) {
-      fetchDetails();
-    }
-  }, [currentFreelancer]);
   
   
   const deleteProfile = async () => {
     try {
-      let res = await fetch(`http://localhost:3000/freelancerList/${currentFreelancer.id}`);
-      let data = await res.json();
-      delete data.profileList;
-      await fetch(`http://localhost:3000/freelancerList/${currentFreelancer.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+      let res = await fetch(`http://localhost:4000/freelancers-Api/freelancer/${currentFreelancer._id}/deleteProfile`,{
+        method:"DELETE"
       });
-      setUploadedProfile(null);
-      setfreelancerdetails([]);
+      let data = await res.json();
+      if(data.message==="Profile list deleted successfully!"){
+        setUploadedProfile(null);
+        setfreelancerdetails([]);
+      }
     } catch (error) {
       console.error("Error deleting freelancer profile:", error);
     }
@@ -363,7 +256,7 @@ async function details(freelancerData) {
             <p className='fs-5 fst-normal'>Company: {job.companyname}</p>
             <p className='fs-5 fst-normal'>Status: {job.status}</p>
             <p className='fs-5 fst-normal'>Pay: {job.pay}</p>
-            <button onClick={() => handleApplyClick(job.id)}>Apply Now</button>
+            <button onClick={() => handleApplyClick(job._id)}>Apply Now</button>
           </div>
         ))
       )}
@@ -516,7 +409,7 @@ async function details(freelancerData) {
             </div>
           </section>
         )}
-       {selectedOption === 'applied-jobs' && (
+      {selectedOption === 'applied-jobs' && (
   <section className="applied-jobs">
     <h2>Applied Jobs</h2>
     {appliedJobs.length === 0 ? (
@@ -533,8 +426,8 @@ async function details(freelancerData) {
         <tbody>
           {appliedJobs.map((job, index) => (
             <tr key={index}>
-              <td>{job.companyname}</td>
-              <td>{job.role}</td>
+              <td>{job.companyName}</td> 
+              <td>{job.jobTitle}</td>
               <td>{job.status}</td>
             </tr>
           ))}
@@ -543,6 +436,7 @@ async function details(freelancerData) {
     )}
   </section>
 )}
+
         
       </div>
       {showApplyModal && (
@@ -584,7 +478,7 @@ async function details(freelancerData) {
         </div>
 
         <div className="form-group">
-          <label>Expected Rate (per hour)</label>
+          <label>Expected Rate</label>
           <input type="number" {...register("rate", { required: true })} />
           {errors.rate && <span>This field is required</span>}
         </div>

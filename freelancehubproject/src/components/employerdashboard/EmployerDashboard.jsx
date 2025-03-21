@@ -93,6 +93,8 @@ function EmployerDashboard() {
   
   //job listing
   const [jobPostings, setJobPostings] = useState([]);
+  const [applications, setApplications] = useState([]);
+
   async function jobListing(jobdetails) {
     let res = await fetch(`http://localhost:4000/employers-Api/employer/${currentEmployer.fullName}/joblisting`, { 
       method: "PUT",
@@ -105,31 +107,38 @@ function EmployerDashboard() {
       setJobPostings(data.payload); 
     }
   }
-  
-  useEffect(() => {
-    const fetchJobPostings = async () => {
-      try {
-        const res = await fetch(`http://localhost:4000/employers-Api/employer/${currentEmployer.fullName}/joblisting`);
-        const data = await res.json();
-  
-        console.log("Fetched job postings:", data); // Debug API Response
-  
-        if (data && data.payload && Array.isArray(data.payload)) {
-          setJobPostings([...data.payload]);  // Ensure React state updates
-        } else {
-          setJobPostings([]);
-        }
-      } catch (error) {
-        console.error("Error fetching job postings:", error);
-      }
-    };
-  
-    if (currentEmployer?.fullName) {
-      fetchJobPostings();
-    }
-  }, [currentEmployer]);
-  
+  //to get applications
+useEffect(() => {
+  const fetchApplications = async () => {
+    try {
+      const res = await fetch(`http://localhost:4000/employers-Api/employer/${currentEmployer.fullName}/applications`);
 
+      if (!res.ok) {
+        throw new Error(`HTTP error! Status: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      console.log("Fetched Applications:", data);
+
+      if (data && data.payload && Array.isArray(data.payload)) {
+        setApplications(data.payload); // Use setApplications instead of setJobPostings
+      } else {
+        setApplications([]);
+      }
+    } catch (error) {
+      console.error("Error fetching applications:", error);
+    }
+  };
+
+  if (currentEmployer?.fullName) {
+    fetchApplications();
+  }
+}, [currentEmployer]);
+ 
+useEffect(() => {
+  console.log("Updated Job Postings State:", jobPostings);
+}, [jobPostings]);
   const handlePostJob = async () => {
     const newJob = {
       id: Date.now(),
@@ -137,7 +146,7 @@ function EmployerDashboard() {
       jobTitle: formData.jobTitle,
       status: formData.status,
       pay: formData.pay,
-      employerId: currentEmployer.id,
+      employerId: currentEmployer._id,
     };
 
     setJobPostings((prev) => [...prev, newJob]);
@@ -162,65 +171,33 @@ function EmployerDashboard() {
     }
   };
   
-  const handleUpdateApplicationStatus = async (jobId, freelancerId, status) => {
+  
+  const handleUpdateApplicationStatus = async (jobId, freelancerName, status) => {
     try {
-      const employerRes = await fetch(`http://localhost:3000/employerList/${currentEmployer.id}`);
-      const employerData = await employerRes.json();
-      const updatedJobList = employerData.joblist.map((job) => {
-        if (job.id === jobId) {
-          const updatedApplications = job.applications.map((application) => {
-            if (application.freelancerId === freelancerId) {
-              return { ...application, status }; 
-            }
-            return application;
-          });
-          return { ...job, applications: updatedApplications };
-        }
-        return job;
-      });
-  
-    
-      const updatedEmployer = { ...employerData, joblist: updatedJobList };
-      const updateEmployerResponse = await fetch(`http://localhost:3000/employerList/${currentEmployee.id}`, {
+      console.log(jobId, freelancerName, status);
+      const response = await fetch(`http://localhost:4000/employers-Api/employer/updateStatus`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(updatedEmployer),
+        body: JSON.stringify({ jobId, freelancerName, status }),
       });
   
-      if (!updateEmployerResponse.ok) {
-        throw new Error("Failed to update employer data");
-      }
-      const freelancerRes = await fetch(`http://localhost:3000/freelancerList/${freelancerId}`);
-      const freelancerData = await freelancerRes.json();
-      const updatedAppliedJobs = freelancerData.appliedJobs.map((job) => {
-        if (job.jobId === jobId) {
-          return { ...job, status };
-        }
-        return job;
-      });
-      const updatedFreelancer = { ...freelancerData, appliedJobs: updatedAppliedJobs };
-      const updateFreelancerResponse = await fetch(`http://localhost:3000/freelancerList/${freelancerId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updatedFreelancer),
-      });
+      const result = await response.json();
+      if (result.message !== "Application status updated successfully.") throw new Error(response.message || "Failed to update status");
   
-      if (!updateFreelancerResponse.ok) {
-        throw new Error("Failed to update freelancer data");
-      }
-  
-      setJobPostings(updatedJobList);
-  
+      setApplications((prevApplications) =>
+        prevApplications.map((application) =>
+          application.jobId === jobId && application.freelancerName === freelancerName
+            ? { ...application, status }
+            : application
+        )
+      );
     } catch (error) {
       console.error("Error updating application status:", error);
     }
   };
- //console.log("availability",freelancer.availability);
- 
+
   return (
     <div className="dashboard-container">
       <div className="sidebar">
@@ -379,56 +356,46 @@ function EmployerDashboard() {
             </div>
           </div>
         )}
-
 {activeSection === "notifications" && (
   <div className="notifications">
     <h3>Freelancer Applications</h3>
-    {jobPostings.length === 0 ? (
-      <p>No job postings yet.</p>
+    {applications.length === 0 ? (
+      <p>No applications yet.</p>
     ) : (
-      jobPostings.map((job) => (
-        <div key={job.id} className="job-application">
-          <h4>{job.jobTitle} - {job.companyname}</h4>
-          {job.applications && job.applications.length > 0 ? (
-            job.applications.map((application) => (
-              <div key={application.freelancerId} className="application-card">
-                <p><strong>Freelancer Name:</strong> {application.fullName}</p>
-                <p><strong>Email:</strong> {application.email}</p>
-                <p><strong>Skills:</strong> {application.skills}</p>
-                <p><strong>Experience:</strong> {application.experience} years</p>
-                <p><strong>Rate:</strong> {application.rate}/hr</p>
-                <p><strong>Availability:</strong> {application.availability}</p>
-                <p><strong>Status:</strong> {application.status}</p>
-                <div className="status-actions">
-                  <button
-                    onClick={() => handleUpdateApplicationStatus(job.id, application.freelancerId, "Accepted")}
-                    className={application.status === "Accepted" ? "active" : ""}
-                  >
-                    Accept
-                  </button>
-                  <button
-                    onClick={() => handleUpdateApplicationStatus(job.id, application.freelancerId, "Rejected")}
-                    className={application.status === "Rejected" ? "active" : ""}
-                  >
-                    Reject
-                  </button>
-                  <button
-                    onClick={() => handleUpdateApplicationStatus(job.id, application.freelancerId, "Pending")}
-                    className={application.status === "Pending" ? "active" : ""}
-                  >
-                    Pending
-                  </button>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p>No applications for this job yet.</p>
-          )}
+      applications.map((application) => (
+        <div key={`${application.jobId}`} className="application-card">
+          <h4>{application.companyName}</h4>
+          <p><strong>Job Title:</strong> {application.jobTitle}</p>
+          <p><strong>Freelancer Name:</strong> {application.freelancerName}</p>
+          <p><strong>Email:</strong> {application.email}</p>
+          <p><strong>Skills:</strong> {application.skills}</p>
+          <p><strong>Experience:</strong> {application.experience} years</p>
+          <p><strong>Rate:</strong> {application.rate}</p>
+          <p><strong>Availability:</strong> {application.availability}</p>
+          <p><strong>Status:</strong> {application.status}</p>
+          <div className="status-actions">
+            <button
+              onClick={() => handleUpdateApplicationStatus(application.jobId, application.freelancerName, "Accepted")}
+              className={application.status === "Accepted" ? "active" : ""}>
+              Accept
+            </button>
+            <button
+              onClick={() => handleUpdateApplicationStatus(application.jobId, application.freelancerName, "Rejected")}
+              className={application.status === "Rejected" ? "active" : ""}>
+              Reject
+            </button>
+            <button
+              onClick={() => handleUpdateApplicationStatus(application.jobId, application.freelancerName, "Pending")}
+              className={application.status === "Pending" ? "active" : ""}>
+              Pending
+            </button>
+          </div>
         </div>
       ))
     )}
   </div>
 )}
+
 
         {activeSection === "profile" && (
           <div className="employer-profile">
