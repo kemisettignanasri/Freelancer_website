@@ -65,7 +65,8 @@ function EmployerLoginStore({ children }) {
         console.error("Error fetching job listings:", error);
     }
 }
-
+  
+//to display jobs in homepage
   
   useEffect(() => {
     jobLists();

@@ -124,6 +124,18 @@ const onSubmitProfile = async (data) => {
       )
       const res=await response.json()
       if(res.message==="Application submitted successfully and recorded in freelancer's account!"){
+        const job = jobListing.find(job => job._id === selectedJobId);
+        if (job) {
+          setAppliedJobs(prevAppliedJobs => [
+            ...prevAppliedJobs,
+            {
+              jobId: selectedJobId,
+              companyName: job.companyname,
+              jobTitle: job.jobTitle,
+              status: 'Pending',
+            },
+          ]);
+        }
         setShowApplyModal(false)
       }
     }catch(error){

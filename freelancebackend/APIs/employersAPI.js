@@ -92,9 +92,6 @@ employerApp.post('/login',expressAsyncHandler(async(req,res)=>{
          res.status(500).json({ message: "Internal Server Error", error: error.message });
      }
  }));
- 
-
-
 
 //put jobList
 employerApp.put('/employer/:fullName/joblisting', expressAsyncHandler(async (req, res) => {
@@ -180,7 +177,7 @@ employerApp.get('/employer/:id/getJobListing', expressAsyncHandler(async (req, r
         // Send jobList array inside payload
         res.status(200).json({
             message: "Job listings fetched successfully!",
-            payload: employer.jobList || []  // Ensure an empty array if no jobs exist
+            payload: employer.jobList || [] 
         });
 
     } catch (error) {
@@ -222,6 +219,8 @@ employerApp.get('/employers/getAllJobListings', expressAsyncHandler(async (req, 
     }
 }));
 
+
+//applications
 employerApp.get('/employer/:fullName/applications', expressAsyncHandler(async (req, res) => {
     const employerCollection = req.app.get('employerCollection');
     const { fullName } = req.params;

@@ -107,6 +107,32 @@ function EmployerDashboard() {
       setJobPostings(data.payload); 
     }
   }
+  const fetchJobListings = async () => {
+    try {
+      const res = await fetch(`http://localhost:4000/employers-Api/employer/${currentEmployer._id}/getJobListing`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem('token')}`,
+        },
+      });
+  
+      if (!res.ok) {
+        throw new Error(`Failed to fetch job listings: ${res.statusText}`);
+      }
+  
+      const data = await res.json();
+      if (data.payload) {
+        setJobPostings(data.payload); // Update the jobPostings state
+      }
+    } catch (error) {
+      console.error("Error fetching job listings:", error);
+    }
+  };
+  useEffect(() => {
+    if (currentEmployer?._id) {
+      fetchJobListings(); // Fetch job listings when the employer logs in
+    }
+  }, [currentEmployer]);
   //to get applications
 useEffect(() => {
   const fetchApplications = async () => {
